@@ -1,13 +1,12 @@
 const http = require('http');
-const app = require('./server');
+const { app, server } = require('./server');
 
-const PORT = 5099;
-let server;
+const PORT = 5000;
 
 function request(path, options = {}) {
   return new Promise((resolve, reject) => {
     const defaultHeaders = {};
-    if (options.body && !options.headers) {
+    if (options.body && options.headers === undefined) {
       defaultHeaders['Content-Type'] = 'application/json';
     }
 
@@ -39,7 +38,7 @@ function request(path, options = {}) {
 
     req.on('error', reject);
 
-    if (options.body) {
+    if (options.body !== undefined) {
       const payload = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
       req.write(payload);
     }
@@ -47,12 +46,16 @@ function request(path, options = {}) {
   });
 }
 
+function deepEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 async function runTests() {
   console.log('\n=============================================================');
   console.log('   Practical 4: Express API & Middleware Verification Tests  ');
+  console.log('   Matches Lab Report Layout & Postman Execution Steps 7-17  ');
   console.log('=============================================================\n');
 
-  server = app.listen(PORT);
   let passed = 0;
   let total = 0;
 
@@ -60,115 +63,128 @@ async function runTests() {
     total++;
     try {
       await fn();
-      console.log(` \x1b[32m✔ PASS\x1b[0m [${total}] ${name}`);
+      console.log(` \x1b[32m✔ PASS\x1b[0m [Step ${total + 6}] ${name}`);
       passed++;
     } catch (err) {
-      console.log(` \x1b[31m✘ FAIL\x1b[0m [${total}] ${name}`);
+      console.log(` \x1b[31m✘ FAIL\x1b[0m [Step ${total + 6}] ${name}`);
       console.error(`   Error: ${err.message}`);
     }
   }
 
   function assertEqual(actual, expected, desc) {
     if (actual !== expected) {
-      throw new Error(`Assertion failed: expected ${expected}, got ${actual} (${desc || ''})`);
+      throw new Error(`Assertion failed: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)} (${desc || ''})`);
     }
   }
 
   try {
-    // 1. GET /tasks
-    await test('GET /tasks - Retrieve all tasks (Status 200)', async () => {
+    // Step 7: GET /tasks
+    await test('GET /tasks: returns all tasks (status 200 OK)', async () => {
       const res = await request('/tasks');
       assertEqual(res.statusCode, 200, 'HTTP status code');
-      assertEqual(Array.isArray(res.body), true, 'body must be array');
+      assertEqual(res.body.length, 2, 'number of tasks');
+      assertEqual(res.body[0].title, 'Learn Express', 'task 1 title');
+      assertEqual(res.body[1].title, 'Build REST API', 'task 2 title');
     });
 
-    // 2. POST /tasks (Valid)
-    let createdTaskId;
-    await test('POST /tasks - Create task with Content-Type application/json (Status 201)', async () => {
+    // Step 8: POST /tasks
+    await test('POST /tasks: creates a new task (status 201 Created)', async () => {
       const res = await request('/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: { title: 'Test Task in Postman', completed: false }
+        body: { title: 'Write lab report' }
       });
       assertEqual(res.statusCode, 201, 'HTTP status code');
-      assertEqual(res.body.title, 'Test Task in Postman', 'title match');
-      createdTaskId = res.body.id;
+      assertEqual(res.body.id, 3, 'task id');
+      assertEqual(res.body.title, 'Write lab report', 'task title');
+      assertEqual(res.body.completed, false, 'task completed default');
     });
 
-    // 3. POST /tasks without title
-    await test('POST /tasks - Reject missing title (Status 400)', async () => {
-      const res = await request('/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: { completed: false }
-      });
-      assertEqual(res.statusCode, 400, 'HTTP status code');
-      assertEqual(res.body.error, 'Bad Request', 'error name');
-    });
-
-    // 4. POST /tasks without Content-Type: application/json
-    await test('POST /tasks - Reject missing/wrong Content-Type (Status 415)', async () => {
-      const res = await request('/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Not a JSON'
-      });
-      assertEqual(res.statusCode, 415, 'HTTP status code');
-      assertEqual(res.body.error, 'Unsupported Media Type', 'error name');
-    });
-
-    // 5. GET /tasks/:id (Valid ID)
-    await test('GET /tasks/:id - Retrieve single task by ID (Status 200)', async () => {
-      const res = await request(`/tasks/${createdTaskId}`);
-      assertEqual(res.statusCode, 200, 'HTTP status code');
-      assertEqual(res.body.id, createdTaskId, 'task id');
-    });
-
-    // 6. GET /tasks/:id (Invalid ID format)
-    await test('GET /tasks/abc - Route middleware rejects invalid ID format (Status 400)', async () => {
-      const res = await request('/tasks/abc');
-      assertEqual(res.statusCode, 400, 'HTTP status code');
-      assertEqual(res.body.error, 'Bad Request', 'error name');
-    });
-
-    // 7. GET /tasks/9999 (Non-existent ID)
-    await test('GET /tasks/9999 - Task not found (Status 404)', async () => {
-      const res = await request('/tasks/9999');
-      assertEqual(res.statusCode, 404, 'HTTP status code');
-      assertEqual(res.body.error, 'Not Found', 'error name');
-    });
-
-    // 8. PUT /tasks/:id
-    await test('PUT /tasks/:id - Update task by ID (Status 200)', async () => {
-      const res = await request(`/tasks/${createdTaskId}`, {
+    // Step 9: PUT /tasks/3
+    await test('PUT /tasks/3: updates the task (status 200 OK)', async () => {
+      const res = await request('/tasks/3', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: { title: 'Updated Task Title', completed: true }
+        body: { completed: true }
       });
       assertEqual(res.statusCode, 200, 'HTTP status code');
-      assertEqual(res.body.title, 'Updated Task Title', 'updated title');
-      assertEqual(res.body.completed, true, 'updated completed');
+      assertEqual(res.body.id, 3, 'task id');
+      assertEqual(res.body.title, 'Write lab report', 'task title preserved');
+      assertEqual(res.body.completed, true, 'task completed updated');
     });
 
-    // 9. DELETE /tasks/:id
-    await test('DELETE /tasks/:id - Delete task by ID (Status 200)', async () => {
-      const res = await request(`/tasks/${createdTaskId}`, {
+    // Step 10: DELETE /tasks/1
+    await test('DELETE /tasks/1: deletes a task (status 200 OK)', async () => {
+      const res = await request('/tasks/1', {
         method: 'DELETE'
       });
       assertEqual(res.statusCode, 200, 'HTTP status code');
-      assertEqual(res.body.message, 'Task deleted successfully', 'delete message');
+      assertEqual(res.body.message, 'Task deleted', 'message');
+      assertEqual(res.body.task.id, 1, 'deleted task id');
     });
 
-    // 10. Undefined Route
-    await test('Fallback Middleware - 404 for undefined routes (Status 404)', async () => {
-      const res = await request('/undefined-route');
+    // Step 11: GET /tasks after delete
+    await test('GET /tasks after delete: task 1 is gone, task 3 shows the update (status 200 OK)', async () => {
+      const res = await request('/tasks');
+      assertEqual(res.statusCode, 200, 'HTTP status code');
+      assertEqual(res.body.length, 2, 'task count');
+      assertEqual(res.body[0].id, 2, 'first task id');
+      assertEqual(res.body[1].id, 3, 'second task id');
+      assertEqual(res.body[1].completed, true, 'second task completed');
+    });
+
+    // Step 12: PUT /tasks/99
+    await test('PUT /tasks/99: unknown task ID returns 404 Not Found', async () => {
+      const res = await request('/tasks/99', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: { completed: true }
+      });
       assertEqual(res.statusCode, 404, 'HTTP status code');
-      assertEqual(res.body.error, 'Not Found', 'error name');
+      assertEqual(res.body.error, 'Task not found', 'error message');
     });
 
-    // 11. Simulated Error - Global Error Handler
-    await test('Global Error Handler - Deliberate error caught safely (Status 500)', async () => {
-      const res = await request('/tasks/simulate/error');
+    // Step 13: POST /tasks without title
+    await test('POST /tasks without title: validation error 400 Bad Request', async () => {
+      const res = await request('/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: {}
+      });
+      assertEqual(res.statusCode, 400, 'HTTP status code');
+      assertEqual(res.body.error, 'Title is required', 'error message');
+    });
+
+    // Step 14: POST /tasks with Content-Type text/plain
+    await test('POST /tasks with Content-Type text/plain: rejected by middleware with 415', async () => {
+      const res = await request('/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: 'title=abc'
+      });
+      assertEqual(res.statusCode, 415, 'HTTP status code');
+      assertEqual(res.body.error, 'Content-Type must be application/json', 'error message');
+    });
+
+    // Step 15: DELETE /tasks/abc
+    await test('DELETE /tasks/abc: route-specific middleware rejects invalid ID format with 400', async () => {
+      const res = await request('/tasks/abc', {
+        method: 'DELETE'
+      });
+      assertEqual(res.statusCode, 400, 'HTTP status code');
+      assertEqual(res.body.error, 'Task ID must be a number', 'error message');
+    });
+
+    // Step 16: GET /unknown
+    await test('GET /unknown: undefined route returns structured JSON 404', async () => {
+      const res = await request('/unknown');
+      assertEqual(res.statusCode, 404, 'HTTP status code');
+      assertEqual(res.body.error, 'Route GET /unknown not found', 'error message');
+    });
+
+    // Step 17: GET /test-error
+    await test('GET /test-error: error passed to next(err), global error handler returns 500', async () => {
+      const res = await request('/test-error');
       assertEqual(res.statusCode, 500, 'HTTP status code');
       assertEqual(res.body.error, 'Something went wrong', 'error message');
     });

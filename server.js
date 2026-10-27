@@ -1,174 +1,98 @@
-const express = require('express');
+const express = require("express");
 const app = express();
 
-// ── 1. Built-in middleware to parse JSON request bodies ───────────
-app.use(express.json());
+// In-memory storage (no database yet)
+let tasks = [
+  { id: 1, title: "Learn Express", completed: false },
+  { id: 2, title: "Build REST API", completed: false },
+];
+let nextId = 3;
 
-// ── 2. Request logging middleware (applied globally) ───────────────
+// ---------- Middleware ----------
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url} - ${new Date().toISOString()}`);
-  next(); // MUST call next() or the request hangs indefinitely
+  next();
 });
 
-// ── 3. Supplementary: Reject POST/PUT missing application/json ─────
+// Reject POST/PUT requests without Content-Type: application/json
 app.use((req, res, next) => {
-  if (['POST', 'PUT'].includes(req.method)) {
-    const contentType = req.headers['content-type'] || '';
-    if (!contentType.includes('application/json')) {
-      return res.status(415).json({
-        error: 'Unsupported Media Type',
-        message: 'Content-Type must be application/json'
-      });
+  if (req.method === "POST" || req.method === "PUT") {
+    const type = req.headers["content-type"] || "";
+    if (!type.includes("application/json")) {
+      return res
+        .status(415)
+        .json({ error: "Content-Type must be application/json" });
     }
   }
   next();
 });
 
-// ── 4. In-Memory Data Store (Temporary Storage) ────────────────────
-let tasks = [
-  { id: 1, title: 'Learn Node.js and Express', completed: false },
-  { id: 2, title: 'Build RESTful API with CRUD routes', completed: true },
-  { id: 3, title: 'Test endpoints in Postman', completed: false }
-];
-let nextId = 4;
+app.use(express.json());
 
-// ── 5. Supplementary: Route-specific middleware to validate ID ─────
-function validateTaskId(req, res, next) {
-  const id = parseInt(req.params.id, 10);
-  if (isNaN(id) || id <= 0) {
-    return res.status(400).json({
-      error: 'Bad Request',
-      message: 'Invalid task ID. ID must be a positive integer.'
-    });
+// Route-specific middleware: validate task ID format
+function validateId(req, res, next) {
+  if (!/^\d+$/.test(req.params.id)) {
+    return res.status(400).json({ error: "Task ID must be a number" });
   }
-  req.taskId = id;
   next();
 }
 
-// ── 6. CRUD Endpoints ──────────────────────────────────────────────
-
-// 1. GET /tasks - Read all tasks
-app.get('/tasks', (req, res) => {
+// ---------- Controllers ----------
+const getAllTasks = (req, res) => {
   res.status(200).json(tasks);
-});
+};
 
-// 2. GET /tasks/:id - Read single task by ID
-app.get('/tasks/:id', validateTaskId, (req, res, next) => {
-  try {
-    const task = tasks.find(t => t.id === req.taskId);
-    if (!task) {
-      return res.status(404).json({
-        error: 'Not Found',
-        message: `Task with ID ${req.taskId} not found`
-      });
-    }
-    res.status(200).json(task);
-  } catch (err) {
-    next(err);
+const createTask = (req, res) => {
+  const { title } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: "Title is required" });
   }
-});
+  const task = { id: nextId++, title, completed: false };
+  tasks.push(task);
+  res.status(201).json(task);
+};
 
-// 3. POST /tasks - Create a new task
-app.post('/tasks', (req, res, next) => {
-  try {
-    const { title, completed = false } = req.body;
-    if (!title || typeof title !== 'string' || title.trim() === '') {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'Field "title" is required'
-      });
-    }
-
-    const newTask = {
-      id: nextId++,
-      title: title.trim(),
-      completed: Boolean(completed)
-    };
-    tasks.push(newTask);
-    res.status(201).json(newTask);
-  } catch (err) {
-    next(err);
+const updateTask = (req, res) => {
+  const task = tasks.find((t) => t.id === Number(req.params.id));
+  if (!task) {
+    return res.status(404).json({ error: "Task not found" });
   }
-});
+  if (req.body.title !== undefined) task.title = req.body.title;
+  if (req.body.completed !== undefined) task.completed = req.body.completed;
+  res.status(200).json(task);
+};
 
-// 4. PUT /tasks/:id - Update an existing task
-app.put('/tasks/:id', validateTaskId, (req, res, next) => {
-  try {
-    const index = tasks.findIndex(t => t.id === req.taskId);
-    if (index === -1) {
-      return res.status(404).json({
-        error: 'Not Found',
-        message: `Task with ID ${req.taskId} not found`
-      });
-    }
-
-    const { title, completed } = req.body;
-    if (title !== undefined) {
-      if (typeof title !== 'string' || title.trim() === '') {
-        return res.status(400).json({
-          error: 'Bad Request',
-          message: 'Field "title" cannot be empty'
-        });
-      }
-      tasks[index].title = title.trim();
-    }
-    if (completed !== undefined) {
-      tasks[index].completed = Boolean(completed);
-    }
-
-    res.status(200).json(tasks[index]);
-  } catch (err) {
-    next(err);
+const deleteTask = (req, res) => {
+  const index = tasks.findIndex((t) => t.id === Number(req.params.id));
+  if (index === -1) {
+    return res.status(404).json({ error: "Task not found" });
   }
+  const [removed] = tasks.splice(index, 1);
+  res.status(200).json({ message: "Task deleted", task: removed });
+};
+
+// ---------- Routes ----------
+app.get("/tasks", getAllTasks);
+app.post("/tasks", createTask);
+app.put("/tasks/:id", validateId, updateTask);
+app.delete("/tasks/:id", validateId, deleteTask);
+
+// Route to demonstrate the global error handler
+app.get("/test-error", (req, res, next) => {
+  next(new Error("Deliberate error for testing"));
 });
 
-// 5. DELETE /tasks/:id - Delete a task by ID
-app.delete('/tasks/:id', validateTaskId, (req, res, next) => {
-  try {
-    const index = tasks.findIndex(t => t.id === req.taskId);
-    if (index === -1) {
-      return res.status(404).json({
-        error: 'Not Found',
-        message: `Task with ID ${req.taskId} not found`
-      });
-    }
-
-    const deleted = tasks.splice(index, 1)[0];
-    res.status(200).json({
-      message: 'Task deleted successfully',
-      deletedTask: deleted
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Endpoint to simulate an error for testing the Global Error Handler
-app.get('/tasks/simulate/error', (req, res, next) => {
-  const err = new Error('Deliberate internal server error for testing');
-  next(err); // Pass error to global error handler
-});
-
-// ── 7. Supplementary: 404 handler for undefined routes ─────────────
+// 404 handler for undefined routes (JSON response)
 app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Cannot ${req.method} ${req.originalUrl}`
-  });
+  res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
 });
 
-// ── 8. Global Error Handling Middleware (MUST BE LAST) ─────────────
+// Global error handling middleware (must be last)
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong' });
+  res.status(500).json({ error: "Something went wrong" });
 });
 
-// ── 9. Start Server ────────────────────────────────────────────────
-const PORT = 5000;
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+const server = app.listen(5000, () => console.log("Server running on port 5000"));
 
-module.exports = app;
+module.exports = { app, server, tasks };

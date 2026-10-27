@@ -2,12 +2,19 @@
   "info": {
     "_postman_id": "b3e9a112-24it055-awdf-p4-postman",
     "name": "AWDF Practical 4: Task Manager REST API (24IT055)",
-    "description": "ITUE301 Advanced Web Development Frameworks - Practical 4: RESTful API with Node.js and Express Middleware Pipeline.\n\nAuthor: Rushil Nariya (24IT055)\nInstitute: FTE, Charusat",
+    "description": "ITUE301 Advanced Web Development Frameworks - Practical 4: Building a RESTful API with Node.js and Express.\n\nAuthor: Rushil Nariya (24IT055)\nInstitute: CSPIT / DEPSTAR, CHARUSAT\nGitHub: https://github.com/jainik45/task-manager-api-24IT055\n\nContains all 11 test cases (Steps 7 through 17) matching the lab manual report layout.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
   "item": [
     {
-      "name": "1. GET All Tasks",
+      "name": "07. GET /tasks (All Tasks - 200 OK)",
       "event": [
         {
           "listen": "test",
@@ -19,7 +26,9 @@
               "pm.test(\"Response is an array of tasks\", function () {",
               "    const jsonData = pm.response.json();",
               "    pm.expect(Array.isArray(jsonData)).to.be.true;",
-              "    pm.expect(jsonData.length).to.be.at.least(1);",
+              "    pm.expect(jsonData.length).to.eql(2);",
+              "    pm.expect(jsonData[0].title).to.eql('Learn Express');",
+              "    pm.expect(jsonData[1].title).to.eql('Build REST API');",
               "});"
             ],
             "type": "text/javascript"
@@ -31,47 +40,19 @@
         "header": [],
         "url": {
           "raw": "{{base_url}}/tasks",
-          "host": ["{{base_url}}"],
-          "path": ["tasks"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks"
+          ]
         },
-        "description": "Retrieves all tasks stored in the in-memory array. Expects 200 OK."
+        "description": "Step 7: Returns all tasks (status 200 OK)"
       },
       "response": []
     },
     {
-      "name": "2. GET Single Task by ID",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code is 200 OK\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});",
-              "pm.test(\"Returns the requested task object\", function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.id).to.eql(1);",
-              "    pm.expect(jsonData).to.have.property('title');",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/tasks/1",
-          "host": ["{{base_url}}"],
-          "path": ["tasks", "1"]
-        },
-        "description": "Retrieves task with ID 1. Passes through validateTaskId route middleware. Expects 200 OK."
-      },
-      "response": []
-    },
-    {
-      "name": "3. POST Create New Task (Valid JSON)",
+      "name": "08. POST /tasks (Create Task - 201 Created)",
       "event": [
         {
           "listen": "test",
@@ -80,11 +61,11 @@
               "pm.test(\"Status code is 201 Created\", function () {",
               "    pm.response.to.have.status(201);",
               "});",
-              "pm.test(\"Returns created task with auto-assigned ID\", function () {",
+              "pm.test(\"Creates task with id 3 and default completed false\", function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('id');",
-              "    pm.expect(jsonData.title).to.eql('Test Task in Postman');",
-              "    pm.environment.set(\"new_task_id\", jsonData.id);",
+              "    pm.expect(jsonData.id).to.eql(3);",
+              "    pm.expect(jsonData.title).to.eql('Write lab report');",
+              "    pm.expect(jsonData.completed).to.be.false;",
               "});"
             ],
             "type": "text/javascript"
@@ -101,19 +82,23 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Test Task in Postman\",\n  \"completed\": false\n}"
+          "raw": "{\n  \"title\": \"Write lab report\"\n}"
         },
         "url": {
           "raw": "{{base_url}}/tasks",
-          "host": ["{{base_url}}"],
-          "path": ["tasks"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks"
+          ]
         },
-        "description": "Creates a new task. Checks Content-Type header. Expects 201 Created."
+        "description": "Step 8: Creates a new task (status 201 Created)"
       },
       "response": []
     },
     {
-      "name": "4. PUT Update Task",
+      "name": "09. PUT /tasks/3 (Update Task - 200 OK)",
       "event": [
         {
           "listen": "test",
@@ -122,9 +107,10 @@
               "pm.test(\"Status code is 200 OK\", function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test(\"Task properties are updated\", function () {",
+              "pm.test(\"Updates task completed status to true\", function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.title).to.eql('Updated Task Title via Postman');",
+              "    pm.expect(jsonData.id).to.eql(3);",
+              "    pm.expect(jsonData.title).to.eql('Write lab report');",
               "    pm.expect(jsonData.completed).to.be.true;",
               "});"
             ],
@@ -142,19 +128,24 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Updated Task Title via Postman\",\n  \"completed\": true\n}"
+          "raw": "{\n  \"completed\": true\n}"
         },
         "url": {
-          "raw": "{{base_url}}/tasks/1",
-          "host": ["{{base_url}}"],
-          "path": ["tasks", "1"]
+          "raw": "{{base_url}}/tasks/3",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks",
+            "3"
+          ]
         },
-        "description": "Updates task with ID 1. Expects 200 OK."
+        "description": "Step 9: Updates task 3 completed status (status 200 OK)"
       },
       "response": []
     },
     {
-      "name": "5. DELETE Task",
+      "name": "10. DELETE /tasks/1 (Delete Task - 200 OK)",
       "event": [
         {
           "listen": "test",
@@ -163,9 +154,11 @@
               "pm.test(\"Status code is 200 OK\", function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test(\"Contains deletion success message\", function () {",
+              "pm.test(\"Confirms deletion and returns removed task\", function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.message).to.eql('Task deleted successfully');",
+              "    pm.expect(jsonData.message).to.eql('Task deleted');",
+              "    pm.expect(jsonData.task.id).to.eql(1);",
+              "    pm.expect(jsonData.task.title).to.eql('Learn Express');",
               "});"
             ],
             "type": "text/javascript"
@@ -176,16 +169,148 @@
         "method": "DELETE",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/tasks/2",
-          "host": ["{{base_url}}"],
-          "path": ["tasks", "2"]
+          "raw": "{{base_url}}/tasks/1",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks",
+            "1"
+          ]
         },
-        "description": "Deletes task with ID 2. Expects 200 OK."
+        "description": "Step 10: Deletes task with ID 1 (status 200 OK)"
       },
       "response": []
     },
     {
-      "name": "6. [Supplementary 1] Reject Missing Content-Type (POST)",
+      "name": "11. GET /tasks (After Delete - 200 OK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Task 1 is deleted and task 3 is updated\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.length).to.eql(2);",
+              "    pm.expect(jsonData[0].id).to.eql(2);",
+              "    pm.expect(jsonData[1].id).to.eql(3);",
+              "    pm.expect(jsonData[1].completed).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/tasks",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks"
+          ]
+        },
+        "description": "Step 11: GET /tasks after delete: task 1 is gone, task 3 shows update"
+      },
+      "response": []
+    },
+    {
+      "name": "12. PUT /tasks/99 (Unknown Task ID - 404 Not Found)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 404 Not Found\", function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "pm.test(\"Returns Task not found error\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.eql('Task not found');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"completed\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/tasks/99",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks",
+            "99"
+          ]
+        },
+        "description": "Step 12: PUT /tasks/99: unknown task ID returns 404 Not Found"
+      },
+      "response": []
+    },
+    {
+      "name": "13. POST /tasks (Without Title - 400 Bad Request)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 Bad Request\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"Returns Title is required error\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.eql('Title is required');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{base_url}}/tasks",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks"
+          ]
+        },
+        "description": "Step 13: POST /tasks without title: validation error 400 Bad Request"
+      },
+      "response": []
+    },
+    {
+      "name": "14. POST /tasks (Invalid Content-Type text/plain - 415)",
       "event": [
         {
           "listen": "test",
@@ -194,9 +319,9 @@
               "pm.test(\"Status code is 415 Unsupported Media Type\", function () {",
               "    pm.response.to.have.status(415);",
               "});",
-              "pm.test(\"Returns error object requiring application/json\", function () {",
+              "pm.test(\"Returns Content-Type must be application/json error\", function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.error).to.eql('Unsupported Media Type');",
+              "    pm.expect(jsonData.error).to.eql('Content-Type must be application/json');",
               "});"
             ],
             "type": "text/javascript"
@@ -213,19 +338,23 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "Plain text body without application/json"
+          "raw": "title=abc"
         },
         "url": {
           "raw": "{{base_url}}/tasks",
-          "host": ["{{base_url}}"],
-          "path": ["tasks"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks"
+          ]
         },
-        "description": "Tests Content-Type rejection middleware. Expects 415 Unsupported Media Type."
+        "description": "Step 14: POST /tasks with Content-Type text/plain: rejected by middleware with 415"
       },
       "response": []
     },
     {
-      "name": "7. [Supplementary 2] Route Middleware Invalid Task ID",
+      "name": "15. DELETE /tasks/abc (Invalid ID Format - 400 Bad Request)",
       "event": [
         {
           "listen": "test",
@@ -234,9 +363,9 @@
               "pm.test(\"Status code is 400 Bad Request\", function () {",
               "    pm.response.to.have.status(400);",
               "});",
-              "pm.test(\"Returns validation error for non-integer ID\", function () {",
+              "pm.test(\"Returns Task ID must be a number error\", function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.error).to.eql('Bad Request');",
+              "    pm.expect(jsonData.error).to.eql('Task ID must be a number');",
               "});"
             ],
             "type": "text/javascript"
@@ -244,19 +373,24 @@
         }
       ],
       "request": {
-        "method": "GET",
+        "method": "DELETE",
         "header": [],
         "url": {
           "raw": "{{base_url}}/tasks/abc",
-          "host": ["{{base_url}}"],
-          "path": ["tasks", "abc"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks",
+            "abc"
+          ]
         },
-        "description": "Tests validateTaskId route middleware with string 'abc'. Expects 400 Bad Request."
+        "description": "Step 15: DELETE /tasks/abc: route-specific middleware rejects invalid ID format with 400"
       },
       "response": []
     },
     {
-      "name": "8. Task Not Found (404)",
+      "name": "16. GET /unknown (Undefined Route - 404 Not Found)",
       "event": [
         {
           "listen": "test",
@@ -265,9 +399,9 @@
               "pm.test(\"Status code is 404 Not Found\", function () {",
               "    pm.response.to.have.status(404);",
               "});",
-              "pm.test(\"Returns 404 error message\", function () {",
+              "pm.test(\"Returns structured JSON 404 error\", function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.error).to.eql('Not Found');",
+              "    pm.expect(jsonData.error).to.eql('Route GET /unknown not found');",
               "});"
             ],
             "type": "text/javascript"
@@ -278,47 +412,20 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/tasks/9999",
-          "host": ["{{base_url}}"],
-          "path": ["tasks", "9999"]
+          "raw": "{{base_url}}/unknown",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "unknown"
+          ]
         },
-        "description": "Retrieves non-existent task ID. Expects 404 Not Found."
+        "description": "Step 16: GET /unknown: undefined route returns structured JSON 404"
       },
       "response": []
     },
     {
-      "name": "9. [Supplementary 3] Undefined Route Handler (404)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code is 404 Not Found\", function () {",
-              "    pm.response.to.have.status(404);",
-              "});",
-              "pm.test(\"Returns structured JSON for undefined route\", function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.error).to.eql('Not Found');",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/undefined-route",
-          "host": ["{{base_url}}"],
-          "path": ["undefined-route"]
-        },
-        "description": "Tests custom 404 fallback middleware for non-existent routes. Expects 404 Not Found."
-      },
-      "response": []
-    },
-    {
-      "name": "10. Global Error Handling Middleware (500)",
+      "name": "17. GET /test-error (Global Error Handler - 500 Error)",
       "event": [
         {
           "listen": "test",
@@ -327,10 +434,9 @@
               "pm.test(\"Status code is 500 Internal Server Error\", function () {",
               "    pm.response.to.have.status(500);",
               "});",
-              "pm.test(\"Returns safe generic error message without stack trace\", function () {",
+              "pm.test(\"Returns safe generic error message\", function () {",
               "    const jsonData = pm.response.json();",
               "    pm.expect(jsonData.error).to.eql('Something went wrong');",
-              "    pm.expect(jsonData).to.not.have.property('stack');",
               "});"
             ],
             "type": "text/javascript"
@@ -341,20 +447,17 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/tasks/simulate/error",
-          "host": ["{{base_url}}"],
-          "path": ["tasks", "simulate", "error"]
+          "raw": "{{base_url}}/test-error",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "test-error"
+          ]
         },
-        "description": "Triggers deliberate error caught by final global error handling middleware. Expects 500 Internal Server Error."
+        "description": "Step 17: GET /test-error: error passed to next(err), global error handler returns 500"
       },
       "response": []
-    }
-  ],
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:5000",
-      "type": "string"
     }
   ]
 }

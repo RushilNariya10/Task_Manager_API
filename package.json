@@ -1,10 +1,11 @@
 {
-  "name": "task-manager-api-24it055",
+  "name": "task-manager-api",
   "version": "1.0.0",
-  "description": "Practical 4: Building a RESTful API with Node.js and Express",
+  "description": "Practical 4: Building a RESTful API with Node.js and Express - Rushil Nariya (24IT055)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "node server.js",
     "test": "node test.js"
   },
   "keywords": [
@@ -12,11 +13,12 @@
     "rest-api",
     "middleware",
     "crud",
+    "charusat",
     "awdf"
   ],
   "author": "Rushil Nariya (24IT055)",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^4.19.2"
   }
 }
