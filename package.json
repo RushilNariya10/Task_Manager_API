@@ -1,7 +1,7 @@
 {
   "name": "task-manager-api",
-  "version": "1.0.0",
-  "description": "Practical 4: Building a RESTful API with Node.js and Express - Rushil Nariya (24IT055)",
+  "version": "2.0.0",
+  "description": "Task Manager REST API with Express, MongoDB & Mongoose (Practical 4 & 5) - Rushil Nariya (24IT055)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,15 +10,23 @@
   },
   "keywords": [
     "express",
+    "mongodb",
+    "mongoose",
     "rest-api",
     "middleware",
     "crud",
+    "schema",
     "charusat",
     "awdf"
   ],
   "author": "Rushil Nariya (24IT055)",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.19.2"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.2"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.1.3"
   }
 }

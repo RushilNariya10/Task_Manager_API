@@ -1,0 +1,272 @@
+{
+  "info": {
+    "_postman_id": "c8f12a34-24it055-awdf-p5-postman",
+    "name": "AWDF Practical 5: MongoDB Integration & Mongoose Schema (24IT055)",
+    "description": "ITUE301 Advanced Web Development Frameworks - Practical 5: MongoDB Integration and Schema Design with Mongoose.\n\nAuthor: Rushil Nariya (24IT055)\nInstitute: CSPIT / DEPSTAR, CHARUSAT\nGitHub: https://github.com/RushilNariya10/Task_Manager_API\n\nContains full CRUD operations, validation tests, and supplementary problem test cases.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "task_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. POST /tasks (Create Task - 201 Created)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "pm.test(\"Response has generated _id and correct schema fields\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('_id');",
+              "    pm.expect(jsonData.title).to.eql('Complete MongoDB Practical');",
+              "    pm.expect(jsonData.description).to.eql('Implement CRUD operations using Mongoose');",
+              "    pm.expect(jsonData.completed).to.be.false;",
+              "    pm.expect(jsonData).to.have.property('createdAt');",
+              "    pm.collectionVariables.set('task_id', jsonData._id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Complete MongoDB Practical\",\n  \"description\": \"Implement CRUD operations using Mongoose\",\n  \"completed\": false\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/tasks",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks"
+          ]
+        },
+        "description": "Creates a new Task document in MongoDB via Mongoose Task.create(). Expects 201 Created."
+      },
+      "response": []
+    },
+    {
+      "name": "2. GET /tasks (All Tasks - 200 OK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response is an array of tasks from MongoDB\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+              "    pm.expect(jsonData.length).to.be.at.least(1);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/tasks",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks"
+          ]
+        },
+        "description": "Retrieves all task documents using Task.find(). Expects 200 OK."
+      },
+      "response": []
+    },
+    {
+      "name": "3. GET /tasks/:id (Single Task - 200 OK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Returns the requested task object\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData._id).to.eql(pm.collectionVariables.get('task_id'));",
+              "    pm.expect(jsonData).to.have.property('title');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/tasks/{{task_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks",
+            "{{task_id}}"
+          ]
+        },
+        "description": "Retrieves a single task document by its MongoDB ObjectId. Expects 200 OK."
+      },
+      "response": []
+    },
+    {
+      "name": "4. PUT /tasks/:id (Update Task - 200 OK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Completed status updated to true\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.completed).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"completed\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/tasks/{{task_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks",
+            "{{task_id}}"
+          ]
+        },
+        "description": "Updates task using Task.findByIdAndUpdate() with runValidators enabled. Expects 200 OK."
+      },
+      "response": []
+    },
+    {
+      "name": "5. POST /tasks (Validation Failure - 400 Bad Request)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 Bad Request\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "pm.test(\"Structured JSON validation error returned\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.eql('Validation Error');",
+              "    pm.expect(Array.isArray(jsonData.errors)).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Missing title payload\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/tasks",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks"
+          ]
+        },
+        "description": "Triggers Mongoose schema validation by omitting required field 'title'. Returns structured JSON."
+      },
+      "response": []
+    },
+    {
+      "name": "6. DELETE /tasks/:id (Delete Task - 200 OK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Task deleted successfully confirmation returned\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.eql('Task deleted successfully');",
+              "    pm.expect(jsonData.task._id).to.eql(pm.collectionVariables.get('task_id'));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/tasks/{{task_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "tasks",
+            "{{task_id}}"
+          ]
+        },
+        "description": "Deletes task from MongoDB using Task.findByIdAndDelete(). Expects 200 OK."
+      },
+      "response": []
+    }
+  ]
+}
+
